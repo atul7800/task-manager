@@ -1,48 +1,31 @@
 import React from "react";
+import KebabMenu from "./KebabMenu";
 
 const Tasks = ({
-  id,
   title,
   description,
-  complete,
   mongoId,
   deleteTask,
   completeTask,
+  isOpen,
+  toggleDropdown,
+  closeMenu,
 }) => {
   return (
-    <tr className="border-b bg-white dark:border-gray-700 dark:bg-gray-800">
-      <th
-        scope="row"
-        className="whitespace-nowrap px-6 py-4 font-medium text-gray-900 dark:text-white"
-      >
-        {id + 1}
-      </th>
-      <td className={`px-6 py-4 ${complete ? "line-through" : ""}`}>{title}</td>
-      <td className={`px-6 py-4 ${complete ? "line-through" : ""}`}>
-        {description}
-      </td>
-      <td className="px-6 py-4">{complete ? "Completed" : "Pending"}</td>
-      <td className="px-6 py-4">
-        <div className="flex gap-2">
-          <button
-            onClick={() => deleteTask(mongoId)}
-            className="w-20 bg-red-500 px-4 py-2 text-white"
-          >
-            Delete
-          </button>
-          {complete ? (
-            ""
-          ) : (
-            <button
-              onClick={() => completeTask(mongoId)}
-              className="w-20 bg-green-500 px-4 py-2 text-white"
-            >
-              Done
-            </button>
-          )}
-        </div>
-      </td>
-    </tr>
+    <div className="rounded-lg border-2 border-teal-600 p-3">
+      <div className="flex items-center justify-between gap-1 border-b-2">
+        <h2 className="text-lg font-bold">{title}</h2>
+
+        <KebabMenu
+          isOpen={isOpen}
+          toggleDropdown={toggleDropdown}
+          onDone={() => completeTask(mongoId)}
+          onDelete={() => deleteTask(mongoId)}
+        />
+      </div>
+
+      <p className="mt-2">{description}</p>
+    </div>
   );
 };
 

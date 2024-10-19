@@ -9,7 +9,16 @@ export default function Home() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
+    priority: "",
   });
+
+  const priorities = ["low", "high"];
+
+  const [openIndex, setOpenIndex] = useState(null);
+
+  const handleToggle = (index) => {
+    setOpenIndex(openIndex === index ? null : index); // Toggle the index or close if it's the same
+  };
 
   const [taskData, setTaskData] = useState([]);
 
@@ -23,6 +32,7 @@ export default function Home() {
   };
 
   const deleteTask = async (id) => {
+    setOpenIndex(null);
     const response = await axios.delete("/api", {
       params: {
         mongoId: id,
@@ -34,6 +44,7 @@ export default function Home() {
   };
 
   const completeTask = async (id) => {
+    setOpenIndex(null);
     const response = await axios.put(
       "/api",
       {},
@@ -57,7 +68,6 @@ export default function Home() {
       ...formData,
       [name]: value,
     });
-    console.log(formData);
   };
 
   const submitHandler = async (e) => {
@@ -71,6 +81,7 @@ export default function Home() {
       setFormData({
         title: "",
         description: "",
+        priority: "",
       });
       fetchTasks();
     } catch (error) {
@@ -100,49 +111,45 @@ export default function Home() {
           className="w-full border-2 px-3 py-2"
           onChange={(e) => handleOnChange(e)}
         ></textarea>
+        <select
+          name="category"
+          value={formData.priority}
+          onChange={(e) => handleOnChange(e)}
+          className="w-full border-2 px-3 py-2"
+        >
+          <option value="" disabled>
+            Select priority
+          </option>
+          {priorities.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
         <button type="submit" className="bg-orange-600 px-11 py-3 text-white">
           Save
         </button>
       </form>
 
       <div className="relative mx-auto mt-24 w-[60%] overflow-x-auto">
-        <table className="w-full text-left text-sm text-gray-500 rtl:text-right dark:text-gray-400">
-          <thead className="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-400">
-            <tr>
-              <th scope="col" className="px-6 py-3">
-                Id
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Title
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Description
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Status
-              </th>
-              <th scope="col" className="px-6 py-3">
-                Action
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {taskData.map((item, index) => {
-              return (
-                <Tasks
-                  key={index}
-                  id={index}
-                  title={item.title}
-                  description={item.description}
-                  complete={item.isCompleted}
-                  mongoId={item._id}
-                  deleteTask={deleteTask}
-                  completeTask={completeTask}
-                />
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {taskData.map((item, index) => (
+            <div key={index}>
+              <Tasks
+                key={index}
+                title={item.title}
+                description={item.description}
+                complete={item.isCompleted}
+                mongoId={item._id}
+                deleteTask={deleteTask}
+                completeTask={completeTask}
+                closeMenu={setOpenIndex}
+                isOpen={openIndex === index} // Check if this card's index matches the open index
+                toggleDropdown={() => handleToggle(index)} // Pass the toggle function
+              />
+            </div>
+          ))}
+        </div>
       </div>
     </>
   );
