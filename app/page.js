@@ -1,6 +1,6 @@
 "use client";
+import SearchBar from "@/components/SearchBar";
 import Tasks from "@/components/Tasks";
-import axios from "axios";
 import { useEffect, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -10,9 +10,16 @@ export default function Home() {
     title: "",
     description: "",
     priority: "",
+    completed: false,
   });
 
-  const priorities = ["low", "high"];
+  const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    console.log(query);
+  }, [query]);
+
+  const priorities = ["low", "medium", "high"];
 
   const [openIndex, setOpenIndex] = useState(null);
 
@@ -21,40 +28,65 @@ export default function Home() {
   };
 
   const [taskData, setTaskData] = useState([]);
+  const [incompleteTasks, setIncompleteTasks] = useState([]);
+  const [completeTasks, setCompleteTasks] = useState([]);
 
-  const fetchTasks = async () => {
-    try {
-      const response = await axios("/api");
-      setTaskData(response.data.tasks);
-    } catch (error) {
-      toast.error("Couldn't Load the tasks");
-    }
+  const fetchTasks = () => {
+    const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    // Separate tasks into completed and uncompleted
+    const completedTasks = tasks.filter((task) => task.completed);
+    const incompletedTasks = tasks.filter((task) => !task.completed);
+
+    // Sort incomplete tasks by priority (high, medium, low)
+    const sortedIncompleteTasks = incompletedTasks.sort((a, b) => {
+      const priorityOrder = { high: 3, medium: 2, low: 1 };
+      return priorityOrder[b.priority] - priorityOrder[a.priority]; // Sort descending
+    });
+    setIncompleteTasks(sortedIncompleteTasks);
+
+    // Sort completed tasks by priority (high first)
+    const sortedCompleteTasks = completedTasks.sort((a, b) => {
+      if (a.priority === "high" && b.priority === "low") return -1;
+      if (a.priority === "low" && b.priority === "high") return 1;
+      return 0; // Maintain original order for same priority
+    });
+    setCompleteTasks(sortedCompleteTasks);
   };
 
-  const deleteTask = async (id) => {
+  const deleteTask = (id) => {
     setOpenIndex(null);
-    const response = await axios.delete("/api", {
-      params: {
-        mongoId: id,
-      },
-    });
-
-    toast.success(response.data.msg);
+    let tasks = JSON.parse(localStorage.getItem("tasks"));
+    tasks = tasks.filter((task) => task.taskID !== id);
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+    toast.success("Task deleted successfully!");
     fetchTasks();
   };
 
-  const completeTask = async (id) => {
+  const editTask = (id) => {
     setOpenIndex(null);
-    const response = await axios.put(
-      "/api",
-      {},
-      {
-        params: {
-          mongoId: id,
-        },
-      },
-    );
-    toast.success(response.data.msg);
+    let tasks = JSON.parse(localStorage.getItem("tasks"));
+    const updatedTasks = tasks.map((task) => {
+      if (task.taskID === id) {
+        return { ...task, completed: true };
+      }
+      return task;
+    });
+    localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+    toast.success("Task completed successfully!");
+    fetchTasks();
+  };
+
+  const completeTask = (id) => {
+    setOpenIndex(null);
+    let tasks = JSON.parse(localStorage.getItem("tasks"));
+    const updatedTasks = tasks.map((task) => {
+      if (task.taskID === id) {
+        return { ...task, completed: true };
+      }
+      return task;
+    });
+    localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+    toast.success("Task completed successfully!");
     fetchTasks();
   };
 
@@ -70,33 +102,37 @@ export default function Home() {
     });
   };
 
-  const submitHandler = async (e) => {
+  const submitHandler = (e) => {
     e.preventDefault();
 
-    //api call
-    try {
-      const response = await axios.post("/api", formData);
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    const newTask = {
+      taskID: Date.now(),
+      ...formData,
+    };
+    tasks.push(newTask);
+    localStorage.setItem("tasks", JSON.stringify(tasks));
 
-      toast.success(response.data.msg);
-      setFormData({
-        title: "",
-        description: "",
-        priority: "",
-      });
-      fetchTasks();
-    } catch (error) {
-      toast.error("Something went wrong");
-    }
+    toast.success("Task saved successfully!");
+    setFormData({
+      title: "",
+      description: "",
+      priority: "",
+      completed: false,
+    });
+    fetchTasks();
   };
 
   return (
     <>
       <ToastContainer theme="dark" />
+
       <form
         onSubmit={submitHandler}
         className="mx-auto mt-24 flex w-[80%] max-w-[600px] flex-col items-start gap-2 px-2"
       >
         <input
+          required
           type="text"
           name="title"
           placeholder="Enter title"
@@ -105,6 +141,7 @@ export default function Home() {
           onChange={(e) => handleOnChange(e)}
         />
         <textarea
+          required
           name="description"
           placeholder="Enter description"
           value={formData.description}
@@ -112,35 +149,74 @@ export default function Home() {
           onChange={(e) => handleOnChange(e)}
         ></textarea>
         <select
-          name="category"
+          required
+          name="priority"
           value={formData.priority}
           onChange={(e) => handleOnChange(e)}
           className="w-full border-2 px-3 py-2"
         >
           <option value="" disabled>
-            Select priority
+            Set priority
           </option>
-          {priorities.map((category) => (
-            <option key={category} value={category}>
-              {category}
+          {priorities.map((priority, index) => (
+            <option key={index} value={priority}>
+              {priority}
             </option>
           ))}
         </select>
-        <button type="submit" className="bg-orange-600 px-11 py-3 text-white">
+        <button
+          type="submit"
+          className="mt-2 rounded-lg bg-orange-600 px-11 py-3 text-white"
+        >
           Save
         </button>
       </form>
+      <div className="mx-auto mt-16 flex w-[80%] max-w-[600px] flex-col items-start gap-2 px-2">
+        <SearchBar setQuery={setQuery} />
+      </div>
 
-      <div className="relative mx-auto mt-24 w-[60%] overflow-x-auto">
+      <div className="relative mx-auto mt-10 w-[60%] overflow-x-auto">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {taskData.map((item, index) => (
-            <div key={index}>
+          {incompleteTasks
+            .filter(
+              (item) =>
+                item.title.toLocaleLowerCase().includes(query) ||
+                item.description.toLocaleLowerCase().includes(query),
+            )
+            .map((item, index) => (
+              <div key={item.taskID}>
+                <Tasks
+                  title={item.title}
+                  description={item.description}
+                  taskId={item.taskID}
+                  completed={item.completed}
+                  priority={item.priority}
+                  deleteTask={deleteTask}
+                  completeTask={completeTask}
+                  closeMenu={setOpenIndex}
+                  isOpen={openIndex === index} // Check if this card's index matches the open index
+                  toggleDropdown={() => handleToggle(index)} // Pass the toggle function
+                />
+              </div>
+            ))}
+        </div>
+        <div className="flex w-full items-center justify-center py-5">
+          <span className="my-5 w-full border-b-2"></span>
+          <p className="whitespace-nowrap px-2 py-1 text-lg font-bold">
+            Completed tasks
+          </p>
+          <span className="my-5 w-full border-b-2"></span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {completeTasks.map((item, index) => (
+            <div key={item.taskID}>
               <Tasks
-                key={index}
                 title={item.title}
                 description={item.description}
-                complete={item.isCompleted}
-                mongoId={item._id}
+                taskId={item.taskID}
+                completed={item.completed}
+                priority={item.priority}
                 deleteTask={deleteTask}
                 completeTask={completeTask}
                 closeMenu={setOpenIndex}

@@ -1,13 +1,11 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 
 const KebabMenu = ({ isOpen, toggleDropdown, onDelete, onDone }) => {
-  
-
   return (
     <div className="menu-container relative inline-block text-left">
       <button
         onClick={toggleDropdown}
-        className="inline-flex h-full w-full items-center justify-center rounded-md px-3 py-1.5 text-lg font-medium text-gray-700 hover:bg-gray-200 focus:outline-none"
+        className="inline-flex h-full w-full items-center justify-center rounded-md text-lg font-medium text-gray-700 hover:bg-gray-200 focus:outline-none"
       >
         ⋮
       </button>
