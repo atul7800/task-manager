@@ -13,7 +13,14 @@ export default function Home() {
     completed: false,
   });
 
+  const [editId, setEditId] = useState(null);
+
   const [query, setQuery] = useState("");
+
+  const [isModalOpen, setModalOpen] = useState(false);
+
+  // const openModal = () => setModalOpen(true);
+  // const closeModal = () => setModalOpen(false);
 
   useEffect(() => {
     console.log(query);
@@ -24,10 +31,10 @@ export default function Home() {
   const [openIndex, setOpenIndex] = useState(null);
 
   const handleToggle = (index) => {
+    console.log(index);
     setOpenIndex(openIndex === index ? null : index); // Toggle the index or close if it's the same
   };
 
-  const [taskData, setTaskData] = useState([]);
   const [incompleteTasks, setIncompleteTasks] = useState([]);
   const [completeTasks, setCompleteTasks] = useState([]);
 
@@ -63,17 +70,20 @@ export default function Home() {
   };
 
   const editTask = (id) => {
-    setOpenIndex(null);
-    let tasks = JSON.parse(localStorage.getItem("tasks"));
-    const updatedTasks = tasks.map((task) => {
-      if (task.taskID === id) {
-        return { ...task, completed: true };
-      }
-      return task;
-    });
-    localStorage.setItem("tasks", JSON.stringify(updatedTasks));
-    toast.success("Task completed successfully!");
-    fetchTasks();
+    const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    const taskToEdit = tasks.find((task) => task.taskID === id);
+
+    if (taskToEdit) {
+      setFormData({
+        title: taskToEdit.title,
+        description: taskToEdit.description,
+        priority: taskToEdit.priority,
+        completed: taskToEdit.completed,
+      });
+      setEditId(id);
+    } else {
+      toast.error("Task not found!");
+    }
   };
 
   const completeTask = (id) => {
@@ -106,14 +116,33 @@ export default function Home() {
     e.preventDefault();
 
     let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-    const newTask = {
-      taskID: Date.now(),
-      ...formData,
-    };
-    tasks.push(newTask);
-    localStorage.setItem("tasks", JSON.stringify(tasks));
 
-    toast.success("Task saved successfully!");
+    if (editId) {
+      // If in edit mode, update the existing task
+      const updatedTasks = tasks.map((task) => {
+        if (task.taskID === editId) {
+          return {
+            ...task,
+            ...formData, // Update task with the new form data
+          };
+        }
+        return task; // Return the unchanged task
+      });
+
+      localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+      toast.success("Task edited successfully!");
+      setEditId(null);
+    } else {
+      const newTask = {
+        taskID: Date.now(),
+        ...formData,
+      };
+      tasks.push(newTask);
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+
+      toast.success("Task added successfully!");
+    }
+
     setFormData({
       title: "",
       description: "",
@@ -192,6 +221,7 @@ export default function Home() {
                   completed={item.completed}
                   priority={item.priority}
                   deleteTask={deleteTask}
+                  editTask={editTask}
                   completeTask={completeTask}
                   closeMenu={setOpenIndex}
                   isOpen={openIndex === index} // Check if this card's index matches the open index
@@ -227,6 +257,13 @@ export default function Home() {
           ))}
         </div>
       </div>
+      {/* <TaskDescriptionModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        title="My Modal"
+      >
+        
+      </TaskDescriptionModal> */}
     </>
   );
 }

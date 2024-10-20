@@ -1,11 +1,14 @@
 import React from "react";
 import KebabMenu from "./KebabMenu";
+import { MdDelete } from "react-icons/md";
+import TextTruncate from "react-text-truncate";
 
 const Tasks = ({
   title,
   description,
   taskId,
   deleteTask,
+  editTask,
   completed,
   priority,
   completeTask,
@@ -28,15 +31,29 @@ const Tasks = ({
           {title}
         </h2>
 
-        <KebabMenu
-          isOpen={isOpen}
-          toggleDropdown={toggleDropdown}
-          onDone={() => completeTask(taskId)}
-          onDelete={() => deleteTask(taskId)}
-        />
+        {completed ? (
+          <MdDelete onClick={() => deleteTask(taskId)} />
+        ) : (
+          <KebabMenu
+            completed={completed}
+            isOpen={isOpen}
+            toggleDropdown={toggleDropdown}
+            onDone={() => completeTask(taskId)}
+            onDelete={() => deleteTask(taskId)}
+            onEdit={() => editTask(taskId)}
+          />
+        )}
       </div>
 
-      <p className={`mt-2 ${completed && "line-through"}`}>{description}</p>
+      <TextTruncate
+        line={2}
+        element="p"
+        truncateText="..."
+        text={description}
+        className={`mt-2 ${completed && "line-through"}`}
+      />
+
+      {/* <p className={`mt-2 ${completed && "line-through"}`}>{description}</p> */}
     </div>
   );
 };
